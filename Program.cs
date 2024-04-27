@@ -19,16 +19,12 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddTransient<TokenService>();
 
-if (builder.Environment.IsDevelopment()) 
+var connString = string.Empty;
+
+if (builder.Environment.IsDevelopment())
+    connString = builder.Configuration.GetConnectionString("DefaultConnection");
+else
 {
-    builder.Services.AddDbContext<AppDbContext>(options =>
-    {
-        options.UseSqlite("Data Source=./Data/database.db");
-    });
-}
-else 
-{
-    string connString = string.Empty;
     // Use connection string provided at runtime by FlyIO.
     var connUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
@@ -45,16 +41,11 @@ else
     var updatedHost = pgHost.Replace("flycast", "internal");
 
     connString = $"Server={updatedHost};Port={pgPort};User Id={pgUser};Password={pgPass};Database={pgDb};";
-    
-    builder.Services.AddDbContext<AppDbContext>(options =>
-    {
-        options.UseNpgsql(connString);
-    });
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlite("Data Source=./Data/database.db");
+    options.UseNpgsql(connString);
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
