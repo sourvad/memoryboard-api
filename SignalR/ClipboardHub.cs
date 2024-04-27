@@ -10,7 +10,7 @@ namespace MemoryboardAPI.SignalR
     {
         private readonly AppDbContext _context = context;
 
-        public async Task Copy(string copiedText)
+        public async Task Copy(byte[] encryptedBytes)
         {
             var userId = Context.UserIdentifier;
             var userIdInt = int.Parse(userId);
@@ -21,10 +21,10 @@ namespace MemoryboardAPI.SignalR
                 userClipboard.Items.RemoveAt(49);
             }
 
-            userClipboard.Items.Insert(0, copiedText);
+            userClipboard.Items.Insert(0, encryptedBytes);
 
             await _context.SaveChangesAsync();
-            await Clients.OthersInGroup(userId).SendAsync("BroadcastCopy", copiedText);
+            await Clients.OthersInGroup(userId).SendAsync("BroadcastCopy", encryptedBytes);
         }
 
         public async Task Select(int selectedIndex)

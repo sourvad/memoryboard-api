@@ -16,7 +16,7 @@ namespace MemoryboardAPI.Controllers
 
         // api/clipboard
         [HttpGet]
-        public async Task<ActionResult<string[]>> GetUserClipboard()
+        public async Task<ActionResult<List<byte[]>>> GetUserClipboard()
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 

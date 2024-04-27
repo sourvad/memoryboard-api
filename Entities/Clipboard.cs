@@ -3,7 +3,7 @@
     public class Clipboard
     {
         public int Id { get; set; }
-        public List<string> Items { get; set; } = new();
+        public List<byte[]> Items { get; set; } = [];
         public int UserId { get; set; }
         public User User { get; set; }
     }
