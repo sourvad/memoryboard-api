@@ -2,12 +2,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
 namespace MemoryboardAPI.SignalR
 {
     [Authorize]
     public class ClipboardHub(AppDbContext context) : Hub
     {
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _copyLocks = [];
+
         private readonly AppDbContext _context = context;
 
         public async Task Copy(byte[] encryptedBytes)
@@ -16,15 +19,30 @@ namespace MemoryboardAPI.SignalR
             var userIdInt = int.Parse(userId);
             var userClipboard = await _context.Clipboards.FirstOrDefaultAsync(c => c.UserId == userIdInt);
 
-            if (userClipboard.Items.Count == 50)
+            var userSemaphore = _copyLocks.GetOrAdd(userId, _ =>  new SemaphoreSlim(1, 1));
+
+            await userSemaphore.WaitAsync();
+
+            try
             {
-                userClipboard.Items.RemoveAt(49);
+
+                if (!userClipboard.Items[0].SequenceEqual(encryptedBytes))
+                {
+                    if (userClipboard.Items.Count == 50)
+                    {
+                        userClipboard.Items.RemoveAt(49);
+                    }
+
+                    userClipboard.Items.Insert(0, encryptedBytes);
+
+                    await _context.SaveChangesAsync();
+                    await Clients.OthersInGroup(userId).SendAsync("BroadcastCopy", encryptedBytes);
+                }
             }
-
-            userClipboard.Items.Insert(0, encryptedBytes);
-
-            await _context.SaveChangesAsync();
-            await Clients.OthersInGroup(userId).SendAsync("BroadcastCopy", encryptedBytes);
+            finally
+            {
+                userSemaphore.Release();
+            }
         }
 
         public async Task Select(int selectedIndex)
