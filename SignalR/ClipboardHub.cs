@@ -26,7 +26,7 @@ namespace MemoryboardAPI.SignalR
             try
             {
 
-                if (!userClipboard.Items[0].SequenceEqual(encryptedBytes))
+                if (userClipboard.Items.Count == 0 || !userClipboard.Items[0].SequenceEqual(encryptedBytes))
                 {
                     if (userClipboard.Items.Count == 50)
                     {
